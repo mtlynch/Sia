@@ -12,12 +12,12 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/NebulousLabs/Sia/api"
 	"github.com/NebulousLabs/Sia/build"
 )
 
 var (
 	addr         string
-	force        bool
 	initPassword bool
 )
 
@@ -28,10 +28,7 @@ func apiGet(call string) (*http.Response, error) {
 	if host, port, _ := net.SplitHostPort(addr); host == "" {
 		addr = net.JoinHostPort("localhost", port)
 	}
-	client := &http.Client{}
-	req, _ := http.NewRequest("GET", "http://"+addr+call, nil)
-	req.Header.Add("User-Agent", "Sia-Agent")
-	resp, err := client.Do(req)
+	resp, err := api.HttpGET("http://" + addr + call)
 	if err != nil {
 		return nil, errors.New("no response from daemon")
 	}
@@ -79,11 +76,7 @@ func apiPost(call, vals string) (*http.Response, error) {
 		addr = net.JoinHostPort("localhost", port)
 	}
 
-	client := &http.Client{}
-	req, _ := http.NewRequest("POST", "http://"+addr+call, strings.NewReader(vals))
-	req.Header.Add("User-Agent", "Sia-Agent")
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(req)
+	resp, err := api.HttpPOST("http://"+addr+call, vals)
 	if err != nil {
 		return nil, errors.New("no response from daemon")
 	}
@@ -179,8 +172,11 @@ func main() {
 	minerCmd.AddCommand(minerStartCmd, minerStopCmd, minerStatusCmd)
 
 	root.AddCommand(walletCmd)
-	walletCmd.AddCommand(walletAddressCmd, walletAddressesCmd, walletAddseedCmd, walletInitCmd, walletLoad033xCmd, walletLockCmd, walletSeedsCmd, walletSendCmd, walletStatusCmd, walletUnlockCmd)
+	walletCmd.AddCommand(walletAddressCmd, walletAddressesCmd, walletInitCmd,
+		walletLoadCmd, walletLockCmd, walletSeedsCmd, walletSendCmd,
+		walletStatusCmd, walletTransactionsCmd, walletUnlockCmd)
 	walletInitCmd.Flags().BoolVarP(&initPassword, "password", "p", false, "Prompt for a custom password")
+	walletLoadCmd.AddCommand(walletLoad033xCmd, walletLoadSeedCmd, walletLoadSiagCmd)
 
 	root.AddCommand(renterCmd)
 	renterCmd.AddCommand(renterDownloadQueueCmd, renterFilesDeleteCmd, renterFilesDownloadCmd,
@@ -199,7 +195,6 @@ func main() {
 
 	// parse flags
 	root.PersistentFlags().StringVarP(&addr, "addr", "a", "localhost:9980", "which host/port to communicate with (i.e. the host/port siad is listening on)")
-	root.PersistentFlags().BoolVarP(&force, "force", "f", false, "force certain commands")
 
 	// run
 	root.Execute()

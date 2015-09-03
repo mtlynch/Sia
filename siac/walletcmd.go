@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/NebulousLabs/Sia/api"
+	"github.com/NebulousLabs/Sia/types"
 )
 
 // coinUnits converts a siacoin amount to base units.
@@ -75,13 +76,6 @@ The smallest unit of siacoins is the hasting. One siacoin is 10^24 hastings. Oth
 		Run:   wrap(walletaddressescmd),
 	}
 
-	walletAddseedCmd = &cobra.Command{
-		Use:   `addseed`,
-		Short: "Add a seed to the wallet",
-		Long:  "Uses the given password to create a new wallet with that as the primary seed",
-		Run:   wrap(walletaddseedcmd),
-	}
-
 	walletInitCmd = &cobra.Command{
 		Use:   "init",
 		Short: "Initialize and encrypt a new wallet",
@@ -90,11 +84,33 @@ The seed string, which is also the encryption password, will be returned.`,
 		Run: wrap(walletinitcmd),
 	}
 
+	walletLoadCmd = &cobra.Command{
+		Use:   "load",
+		Short: "Load a wallet seed, v0.3.3.x wallet, or siag keyset",
+		Long:  "Load a wallet seed, v0.3.3.x wallet, or siag keyset",
+		Run:   walletloadcmd,
+	}
+
 	walletLoad033xCmd = &cobra.Command{
-		Use:   "load033x [filepath]",
+		Use:   "033x [filepath]",
 		Short: "Load a v0.3.3.x wallet",
 		Long:  "Load a v0.3.3.x wallet into the current wallet",
 		Run:   wrap(walletload033xcmd),
+	}
+
+	walletLoadSeedCmd = &cobra.Command{
+		Use:   `seed`,
+		Short: "Add a seed to the wallet",
+		Long:  "Uses the given password to create a new wallet with that as the primary seed",
+		Run:   wrap(walletloadseedcmd),
+	}
+
+	walletLoadSiagCmd = &cobra.Command{
+		Use:   `siag [filepaths]`,
+		Short: "Load a siag keyset into the wallet",
+		Long: `Load a set of siag keys into the wallet - typically used for siafunds.
+Example: 'siac wallet load siag key1.siakey,key2.siakey'`,
+		Run: wrap(walletloadsiagcmd),
 	}
 
 	walletLockCmd = &cobra.Command{
@@ -137,6 +153,13 @@ Run 'wallet send --help' to see a list of available units.`,
 		Run:   wrap(walletstatuscmd),
 	}
 
+	walletTransactionsCmd = &cobra.Command{
+		Use:   "transactions",
+		Short: "View transactions",
+		Long:  "View transactions related to addresses spendable by the wallet, providing a net flow of siacoins and siafunds for each transaction",
+		Run:   wrap(wallettransactionscmd),
+	}
+
 	walletUnlockCmd = &cobra.Command{
 		Use:   `unlock`,
 		Short: "Unlock the wallet",
@@ -170,27 +193,6 @@ func walletaddressescmd() {
 	}
 }
 
-// walletaddseedcmd adds a seed to the wallet's list of seeds
-func walletaddseedcmd() {
-	password, err := speakeasy.Ask("Wallet password: ")
-	if err != nil {
-		fmt.Println("Reading password failed")
-		return
-	}
-	seed, err := speakeasy.Ask("New Seed: ")
-	if err != nil {
-		fmt.Println("Reading seed failed")
-		return
-	}
-	qs := fmt.Sprintf("encryptionpassword=%s&seed=%s&dictionary=%s", password, seed, "english")
-	err = post("/wallet/load/seed", qs)
-	if err != nil {
-		fmt.Println("Could not add seed:", err)
-		return
-	}
-	fmt.Println("Added Key")
-}
-
 // walletinitcmd encrypts the wallet with the given password
 func walletinitcmd() {
 	var er api.WalletEncryptPOST
@@ -216,6 +218,9 @@ func walletinitcmd() {
 	}
 }
 
+// walletloadcmd is a no-op; it only has subcommands.
+func walletloadcmd(cmd *cobra.Command, args []string) { cmd.Usage() }
+
 // walletload033xcmd loads a v0.3.3.x wallet into the current wallet.
 func walletload033xcmd(filepath string) {
 	password, err := speakeasy.Ask("Wallet password: ")
@@ -225,6 +230,43 @@ func walletload033xcmd(filepath string) {
 	}
 	qs := fmt.Sprintf("filepath=%s&encryptionpassword=%s", filepath, password)
 	err = post("/wallet/load/033x", qs)
+	if err != nil {
+		fmt.Println("loading error:", err)
+		return
+	}
+	fmt.Println("Wallet loading successful.")
+}
+
+// walletloadseedcmd adds a seed to the wallet's list of seeds
+func walletloadseedcmd() {
+	password, err := speakeasy.Ask("Wallet password: ")
+	if err != nil {
+		fmt.Println("Reading password failed")
+		return
+	}
+	seed, err := speakeasy.Ask("New Seed: ")
+	if err != nil {
+		fmt.Println("Reading seed failed")
+		return
+	}
+	qs := fmt.Sprintf("encryptionpassword=%s&seed=%s&dictionary=%s", password, seed, "english")
+	err = post("/wallet/load/seed", qs)
+	if err != nil {
+		fmt.Println("Could not add seed:", err)
+		return
+	}
+	fmt.Println("Added Key")
+}
+
+// walletloadsiagcmd loads a siag key set into the wallet.
+func walletloadsiagcmd(keyfiles string) {
+	password, err := speakeasy.Ask("Wallet password: ")
+	if err != nil {
+		fmt.Println("Reading password failed")
+		return
+	}
+	qs := fmt.Sprintf("keyfiles=%s&encryptionpassword=%s", keyfiles, password)
+	err = post("/wallet/load/siag", qs)
 	if err != nil {
 		fmt.Println("loading error:", err)
 		return
@@ -337,6 +379,66 @@ Exact:               %v H
 Siafunds:            %v SF
 Siafund Claims:      %v SC
 `, encStatus, lockStatus, sc, usc, status.ConfirmedSiacoinBalance, status.SiafundBalance, status.SiacoinClaimBalance)
+}
+
+// wallettransactionscmd lists all of the transactions related to the wallet,
+// providing a net flow of siacoins and siafunds for each.
+func wallettransactionscmd() {
+	wtg := new(api.WalletTransactionsGET)
+	err := getAPI("/wallet/transactions?startheight=0&endheight=10000000", wtg)
+	if err != nil {
+		fmt.Println("Could not fetch transaction history:", err)
+		return
+	}
+
+	fmt.Println("    [height]                                                   [transaction id]    [net siacoins]   [net siafunds]")
+	txns := append(wtg.ConfirmedTransactions, wtg.UnconfirmedTransactions...)
+	for _, txn := range txns {
+		// Determine the number of outgoing siacoins and siafunds.
+		var outgoingSiacoins types.Currency
+		var outgoingSiafunds types.Currency
+		for _, input := range txn.Inputs {
+			if input.FundType == types.SpecifierSiacoinInput && input.WalletAddress {
+				outgoingSiacoins = outgoingSiacoins.Add(input.Value)
+			}
+			if input.FundType == types.SpecifierSiafundInput && input.WalletAddress {
+				outgoingSiafunds = outgoingSiafunds.Add(input.Value)
+			}
+		}
+
+		// Determine the number of incoming siacoins and siafunds.
+		var incomingSiacoins types.Currency
+		var incomingSiafunds types.Currency
+		for _, output := range txn.Outputs {
+			if output.FundType == types.SpecifierMinerPayout {
+				incomingSiacoins = incomingSiacoins.Add(output.Value)
+			}
+			if output.FundType == types.SpecifierSiacoinOutput && output.WalletAddress {
+				incomingSiacoins = incomingSiacoins.Add(output.Value)
+			}
+			if output.FundType == types.SpecifierSiafundOutput && output.WalletAddress {
+				incomingSiafunds = incomingSiafunds.Add(output.Value)
+			}
+		}
+
+		// Convert the siacoins to a float.
+		incomingSiacoinsFloat, _ := new(big.Rat).SetFrac(incomingSiacoins.Big(), types.SiacoinPrecision.Big()).Float64()
+		outgoingSiacoinsFloat, _ := new(big.Rat).SetFrac(outgoingSiacoins.Big(), types.SiacoinPrecision.Big()).Float64()
+
+		// Print the results.
+		if txn.ConfirmationHeight < 1e9 {
+			fmt.Printf("%12v", txn.ConfirmationHeight)
+		} else {
+			fmt.Printf(" unconfirmed")
+		}
+		fmt.Printf("%67v%15.2f SC", txn.TransactionID, incomingSiacoinsFloat-outgoingSiacoinsFloat)
+		// For siafunds, need to avoid having a negative types.Currency.
+		if incomingSiafunds.Cmp(outgoingSiafunds) >= 0 {
+			fmt.Printf("%14v SF\n", incomingSiafunds.Sub(outgoingSiafunds))
+		} else {
+			fmt.Printf("-%14v SF\n", outgoingSiafunds.Sub(incomingSiafunds))
+		}
+	}
 }
 
 // walletunlockcmd unlocks a saved wallet
