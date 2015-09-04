@@ -71,7 +71,7 @@ func (w *Wallet) initUnseededKeys(masterKey crypto.TwofishKey) error {
 		if err != nil {
 			return err
 		}
-		var sk spendableKey
+		var sk types.SpendableKey
 		err = encoding.Unmarshal(encodedKey, &sk)
 		if err != nil {
 			return err
@@ -82,7 +82,7 @@ func (w *Wallet) initUnseededKeys(masterKey crypto.TwofishKey) error {
 }
 
 // loadSpendableKey loads a spendable key into the wallet's persist structure.
-func (w *Wallet) loadSpendableKey(masterKey crypto.TwofishKey, sk spendableKey) error {
+func (w *Wallet) loadSpendableKey(masterKey crypto.TwofishKey, sk types.SpendableKey) error {
 	// Duplication is detected by looking at the set of unlock conditions. If
 	// the wallet is locked, correct deduplication is uncertain.
 	if !w.unlocked {
@@ -159,7 +159,7 @@ func (w *Wallet) loadSiagKeys(masterKey crypto.TwofishKey, keyfiles []string) er
 	skps = skps[0:skps[0].UnlockConditions.SignaturesRequired]
 
 	// Merge the keys into a single spendableKey and save it to the wallet.
-	var sk spendableKey
+	var sk types.SpendableKey
 	sk.UnlockConditions = skps[0].UnlockConditions
 	for _, skp := range skps {
 		sk.SecretKeys = append(sk.SecretKeys, skp.SecretKey)
@@ -203,7 +203,7 @@ func (w *Wallet) Load033xWallet(masterKey crypto.TwofishKey, filepath033x string
 	}
 	var seedsLoaded int
 	for _, savedKey := range savedKeys {
-		spendKey := spendableKey{
+		spendKey := types.SpendableKey{
 			UnlockConditions: savedKey.UnlockConditions,
 			SecretKeys:       []crypto.SecretKey{savedKey.SecretKey},
 		}

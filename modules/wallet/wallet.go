@@ -5,7 +5,6 @@ import (
 	"log"
 	"sort"
 
-	"github.com/NebulousLabs/Sia/crypto"
 	"github.com/NebulousLabs/Sia/modules"
 	"github.com/NebulousLabs/Sia/sync"
 	"github.com/NebulousLabs/Sia/types"
@@ -23,16 +22,6 @@ var (
 	errNilConsensusSet = errors.New("wallet cannot initialize with a nil consensus set")
 	errNilTpool        = errors.New("wallet cannot initialize with a nil transaction pool")
 )
-
-// spendableKey is a set of secret keys plus the corresponding unlock
-// conditions.  The public key can be derived from the secret key and then
-// matched to the corresponding public keys in the unlock conditions. All
-// addresses that are to be used in 'FundSiacoins' or 'FundSiafunds' in the
-// transaction builder must conform to this form of spendable key.
-type spendableKey struct {
-	UnlockConditions types.UnlockConditions
-	SecretKeys       []crypto.SecretKey
-}
 
 // Wallet is an object that tracks balances, creates keys and addresses,
 // manages building and sending transactions.
@@ -66,7 +55,7 @@ type Wallet struct {
 	// siacoinOutptus, siafundOutputs, and spentOutputs are kept so that they
 	// can be scanned when trying to fund transactions.
 	seeds          []modules.Seed
-	keys           map[types.UnlockHash]spendableKey
+	keys           map[types.UnlockHash]types.SpendableKey
 	siacoinOutputs map[types.SiacoinOutputID]types.SiacoinOutput
 	siafundOutputs map[types.SiafundOutputID]types.SiafundOutput
 	spentOutputs   map[types.OutputID]types.BlockHeight
@@ -115,7 +104,7 @@ func New(cs modules.ConsensusSet, tpool modules.TransactionPool, persistDir stri
 		cs:    cs,
 		tpool: tpool,
 
-		keys:           make(map[types.UnlockHash]spendableKey),
+		keys:           make(map[types.UnlockHash]types.SpendableKey),
 		siacoinOutputs: make(map[types.SiacoinOutputID]types.SiacoinOutput),
 		siafundOutputs: make(map[types.SiafundOutputID]types.SiafundOutput),
 		spentOutputs:   make(map[types.OutputID]types.BlockHeight),

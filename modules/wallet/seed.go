@@ -51,11 +51,11 @@ func generateUnlockConditions(pk crypto.PublicKey) types.UnlockConditions {
 
 // generateSpendableKey creates the keys and unlock conditions a given index of a
 // seed.
-func generateSpendableKey(seed modules.Seed, index uint64) spendableKey {
+func generateSpendableKey(seed modules.Seed, index uint64) types.SpendableKey {
 	// Generate the keys and unlock conditions.
 	entropy := crypto.HashAll(seed, index)
 	sk, pk := crypto.DeterministicSignatureKeys(entropy)
-	return spendableKey{
+	return types.SpendableKey{
 		UnlockConditions: generateUnlockConditions(pk),
 		SecretKeys:       []crypto.SecretKey{sk},
 	}

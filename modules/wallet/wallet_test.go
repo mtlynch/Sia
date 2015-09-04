@@ -178,12 +178,12 @@ func TestAllAddresses(t *testing.T) {
 	}
 	defer wt.closeWt()
 
-	wt.wallet.keys[types.UnlockHash{1}] = spendableKey{}
-	wt.wallet.keys[types.UnlockHash{5}] = spendableKey{}
-	wt.wallet.keys[types.UnlockHash{0}] = spendableKey{}
-	wt.wallet.keys[types.UnlockHash{2}] = spendableKey{}
-	wt.wallet.keys[types.UnlockHash{4}] = spendableKey{}
-	wt.wallet.keys[types.UnlockHash{3}] = spendableKey{}
+	wt.wallet.keys[types.UnlockHash{1}] = types.SpendableKey{}
+	wt.wallet.keys[types.UnlockHash{5}] = types.SpendableKey{}
+	wt.wallet.keys[types.UnlockHash{0}] = types.SpendableKey{}
+	wt.wallet.keys[types.UnlockHash{2}] = types.SpendableKey{}
+	wt.wallet.keys[types.UnlockHash{4}] = types.SpendableKey{}
+	wt.wallet.keys[types.UnlockHash{3}] = types.SpendableKey{}
 	addrs := wt.wallet.AllAddresses()
 	for i := range addrs {
 		if addrs[i][0] != byte(i) {
