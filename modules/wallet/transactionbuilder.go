@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"bytes"
+	"log"
 	"sort"
 
 	"github.com/NebulousLabs/Sia/crypto"
@@ -172,6 +173,8 @@ func (tb *transactionBuilder) FundSiacoins(amount types.Currency) error {
 			potentialFund = potentialFund.Add(sco.Value)
 			continue
 		}
+		log.Printf("sco=%v", sco)
+		log.Printf("Seeking key for %v", sco.UnlockHash)
 		outputUnlockConditions := tb.walletSpender.Key(sco.UnlockHash).UnlockConditions
 		if tb.walletSpender.ConsensusSetHeight() < outputUnlockConditions.Timelock {
 			continue
@@ -223,9 +226,11 @@ func (tb *transactionBuilder) FundSiacoins(amount types.Currency) error {
 		}
 		parentTxn.SiacoinOutputs = append(parentTxn.SiacoinOutputs, refundOutput)
 	}
+	log.Printf("parentTxn.SiacoinInputs=%v", parentTxn.SiacoinInputs)
 
 	// Sign all of the inputs to the parent transaction.
 	for _, sci := range parentTxn.SiacoinInputs {
+		log.Printf("seeking key for %v", sci.UnlockConditions.UnlockHash())
 		err := addSignatures(&parentTxn, types.FullCoveredFields, sci.UnlockConditions, crypto.Hash(sci.ParentID), tb.walletSpender.Key(sci.UnlockConditions.UnlockHash()))
 		if err != nil {
 			return err
