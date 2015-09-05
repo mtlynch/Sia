@@ -121,7 +121,7 @@ func addSignatures(txn *types.Transaction, cf types.CoveredFields, uc types.Unlo
 	return nil
 }
 
-// FundSiacoins will add a siacoin input of exaclty 'amount' to the
+// FundSiacoins will add a siacoin input of exactly 'amount' to the
 // transaction. A parent transaction may be needed to achieve an input with the
 // correct value. The siacoin input will not be signed until 'Sign' is called
 // on the transaction builder.
@@ -224,7 +224,7 @@ func (tb *transactionBuilder) FundSiacoins(amount types.Currency) error {
 		parentTxn.SiacoinOutputs = append(parentTxn.SiacoinOutputs, refundOutput)
 	}
 
-	// Sign all of the inputs to the parent trancstion.
+	// Sign all of the inputs to the parent transaction.
 	for _, sci := range parentTxn.SiacoinInputs {
 		err := addSignatures(&parentTxn, types.FullCoveredFields, sci.UnlockConditions, crypto.Hash(sci.ParentID), tb.walletSpender.Key(sci.UnlockConditions.UnlockHash()))
 		if err != nil {
@@ -251,7 +251,7 @@ func (tb *transactionBuilder) FundSiacoins(amount types.Currency) error {
 	return nil
 }
 
-// FundSiafunds will add a siafund input of exaclty 'amount' to the
+// FundSiafunds will add a siafund input of exactly 'amount' to the
 // transaction. A parent transaction may be needed to achieve an input with the
 // correct value. The siafund input will not be signed until 'Sign' is called
 // on the transaction builder.
@@ -334,7 +334,7 @@ func (tb *transactionBuilder) FundSiafunds(amount types.Currency) error {
 		parentTxn.SiafundOutputs = append(parentTxn.SiafundOutputs, refundOutput)
 	}
 
-	// Sign all of the inputs to the parent trancstion.
+	// Sign all of the inputs to the parent transaction.
 	for _, sfi := range parentTxn.SiafundInputs {
 		err := addSignatures(&parentTxn, types.FullCoveredFields, sfi.UnlockConditions, crypto.Hash(sfi.ParentID), tb.walletSpender.Key(sfi.UnlockConditions.UnlockHash()))
 		if err != nil {
