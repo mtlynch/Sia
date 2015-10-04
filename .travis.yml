@@ -10,4 +10,7 @@ install:
 
 script: make test-long && make cover && make bench
 
+after_success:
+  coveralls
+ 
 sudo: false
