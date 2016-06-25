@@ -26,7 +26,6 @@ dependencies:
 	go install -race std
 	go get -u github.com/golang/lint/golint
 	go get -u github.com/laher/goxc
-	go get -u github.com/mattn/goveralls
 
 
 # pkgs changes which packages the makefile calls operate on. run changes which
