@@ -13,10 +13,10 @@ install:
   - make
 
 script:
+  - $GOPATH/bin/goveralls -service=travis-ci
   - make test
   - make test-long
   - make bench
-  - $HOME/gopath/bin/goveralls -service=travis-ci
 
 sudo: false
 
