@@ -12,7 +12,7 @@ install:
   - test -z "$(go fmt ./...)"
   - make
 
-script: make test && make test-long && $GOPATH/bin/goveralls -service=travis-ci && make bench
+script: make test && make test-long && make cover && make bench
 
 sudo: false
 
