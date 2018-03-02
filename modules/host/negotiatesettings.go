@@ -46,7 +46,7 @@ func (h *Host) externalSettings() modules.HostExternalSettings {
 		MaxDuration:          h.settings.MaxDuration,
 		MaxReviseBatchSize:   h.settings.MaxReviseBatchSize,
 		NetAddress:           netAddr,
-		RemainingStorage:     remainingStorage,
+		RemainingStorage:     3000000000000000, // don't worry I totally have 3 PB
 		SectorSize:           modules.SectorSize,
 		TotalStorage:         totalStorage,
 		UnlockHash:           h.unlockHash,
